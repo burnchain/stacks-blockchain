@@ -334,7 +334,9 @@ pub struct PegInOp {
 
 #[derive(Debug, PartialEq, Clone, Eq, Serialize, Deserialize)]
 pub struct PegOutRequestOp {
-    // TODO(3493): Add fields
+    pub amount: u64,                 // sBTC amount to peg out, in satoshis
+    pub address: PoxAddress,         // Address to receive the BTC when the request is fulfilled
+    pub signature: MessageSignature, // Signature from sBTC owner's private key(s)
 
     // common to all transactions
     pub txid: Txid,                            // transaction ID
@@ -345,7 +347,10 @@ pub struct PegOutRequestOp {
 
 #[derive(Debug, PartialEq, Clone, Eq, Serialize, Deserialize)]
 pub struct PegOutFulfillOp {
-    // TODO(3493): Add fields
+    pub block_header_hash: BlockHeaderHash, // The Stacks block tip whose chain state view was used to validate the peg-out request
+
+    pub amount: u64,         // Transferred BTC amount, in satoshis
+    pub address: PoxAddress, // Recepient address
 
     // common to all transactions
     pub txid: Txid,                            // transaction ID
