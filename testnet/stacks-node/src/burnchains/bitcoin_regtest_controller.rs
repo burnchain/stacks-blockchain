@@ -39,8 +39,8 @@ use stacks::burnchains::{
 use stacks::burnchains::{Burnchain, BurnchainParameters};
 use stacks::chainstate::burn::db::sortdb::SortitionDB;
 use stacks::chainstate::burn::operations::{
-    BlockstackOperationType, LeaderBlockCommitOp, LeaderKeyRegisterOp, PegInOp, PreStxOp, PegOutRequestOp, PegOutFulfillOp,
-    TransferStxOp, UserBurnSupportOp,
+    BlockstackOperationType, LeaderBlockCommitOp, LeaderKeyRegisterOp, PegInOp, PegOutFulfillOp,
+    PegOutRequestOp, PreStxOp, TransferStxOp, UserBurnSupportOp,
 };
 use stacks::chainstate::coordinator::comm::CoordinatorChannels;
 #[cfg(test)]
@@ -1148,7 +1148,10 @@ impl BitcoinRegtestController {
 
         increment_btc_ops_sent_counter();
 
-        info!("Miner node: submitting peg-out request op - {}", public_key.to_hex());
+        info!(
+            "Miner node: submitting peg-out request op - {}",
+            public_key.to_hex()
+        );
 
         Some(tx)
     }
@@ -1179,7 +1182,7 @@ impl BitcoinRegtestController {
         let op_bytes = {
             let mut bytes = self.config.burnchain.magic_bytes.as_bytes().to_vec();
             bytes.push(Opcodes::PegOutFulfill as u8);
-            bytes.extend_from_slice(payload.block_header_hash.as_bytes());
+            bytes.extend_from_slice(payload.chain_tip.as_bytes());
             bytes
         };
 
@@ -1208,7 +1211,10 @@ impl BitcoinRegtestController {
 
         increment_btc_ops_sent_counter();
 
-        info!("Miner node: submitting peg-out fulfill op - {}", public_key.to_hex());
+        info!(
+            "Miner node: submitting peg-out fulfill op - {}",
+            public_key.to_hex()
+        );
 
         Some(tx)
     }

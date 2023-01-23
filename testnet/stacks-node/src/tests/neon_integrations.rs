@@ -10433,10 +10433,7 @@ fn test_submit_and_observe_sbtc_ops() {
     let receiver_standard_principal: PrincipalData = StandardPrincipalData::from(recipient_stx_addr).into();
     let peg_wallet_address =
         address::PoxAddress::Addr32(false, address::PoxAddressType32::P2TR, [0; 32]);
-    let recipient_btc_addr = address::PoxAddress::Standard(
-        recipient_stx_addr,
-        None,
-    );
+    let recipient_btc_addr = address::PoxAddress::Standard(recipient_stx_addr, None);
 
     let (mut conf, _) = neon_integration_test_conf();
 
@@ -10510,7 +10507,7 @@ fn test_submit_and_observe_sbtc_ops() {
     };
 
     let peg_out_fulfill_op = PegOutFulfillOp {
-        block_header_hash: BlockHeaderHash([0; 32]),
+        chain_tip: StacksBlockId([0; 32]),
         recipient: recipient_btc_addr,
         amount: 1337,
         txid: Txid([0u8; 32]),
@@ -10585,10 +10582,10 @@ fn test_submit_and_observe_sbtc_ops() {
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     let parsed_peg_out_request_op = {
-    let sortdb = btc_regtest_controller.sortdb_mut();
-    let tip = SortitionDB::get_canonical_burn_chain_tip(&sortdb.conn()).unwrap();
-    let ops = SortitionDB::get_peg_out_request_ops(&sortdb.conn(), &tip.burn_header_hash)
-        .expect("Failed to get peg out request ops");
+        let sortdb = btc_regtest_controller.sortdb_mut();
+        let tip = SortitionDB::get_canonical_burn_chain_tip(&sortdb.conn()).unwrap();
+        let ops = SortitionDB::get_peg_out_request_ops(&sortdb.conn(), &tip.burn_header_hash)
+            .expect("Failed to get peg out request ops");
         assert_eq!(ops.len(), 1);
 
         ops.into_iter().next().unwrap()
@@ -10610,10 +10607,10 @@ fn test_submit_and_observe_sbtc_ops() {
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
     let parsed_peg_out_fulfill_op = {
-    let sortdb = btc_regtest_controller.sortdb_mut();
-    let tip = SortitionDB::get_canonical_burn_chain_tip(&sortdb.conn()).unwrap();
-    let ops = SortitionDB::get_peg_out_fulfill_ops(&sortdb.conn(), &tip.burn_header_hash)
-        .expect("Failed to get peg out fulfill ops");
+        let sortdb = btc_regtest_controller.sortdb_mut();
+        let tip = SortitionDB::get_canonical_burn_chain_tip(&sortdb.conn()).unwrap();
+        let ops = SortitionDB::get_peg_out_fulfill_ops(&sortdb.conn(), &tip.burn_header_hash)
+            .expect("Failed to get peg out fulfill ops");
         assert_eq!(ops.len(), 1);
 
         ops.into_iter().next().unwrap()
@@ -10638,18 +10635,24 @@ fn test_submit_and_observe_sbtc_ops() {
         peg_in_op_contract.peg_wallet_address
     );
 
-    assert_eq!(parsed_peg_out_request_op.recipient, peg_out_request_op.recipient);
+    assert_eq!(
+        parsed_peg_out_request_op.recipient,
+        peg_out_request_op.recipient
+    );
     assert_eq!(parsed_peg_out_request_op.amount, peg_out_request_op.amount);
     assert_eq!(
         parsed_peg_out_request_op.signature,
         peg_out_request_op.signature
     );
 
-    assert_eq!(parsed_peg_out_fulfill_op.recipient, peg_out_fulfill_op.recipient);
+    assert_eq!(
+        parsed_peg_out_fulfill_op.recipient,
+        peg_out_fulfill_op.recipient
+    );
     assert_eq!(parsed_peg_out_fulfill_op.amount, peg_out_fulfill_op.amount);
     assert_eq!(
-        parsed_peg_out_fulfill_op.block_header_hash,
-        peg_out_fulfill_op.block_header_hash
+        parsed_peg_out_fulfill_op.chain_tip,
+        peg_out_fulfill_op.chain_tip
     );
 
     run_loop_coordinator_channel.stop_chains_coordinator();
