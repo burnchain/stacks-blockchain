@@ -6500,7 +6500,7 @@ pub mod tests {
                 .expect("Failed to get peg-in ops from sortition DB");
 
         assert_eq!(res_peg_out_requests.len(), 1);
-        assert_eq!(res_peg_out_requests[0].amount, 1337);
+        assert_eq!(res_peg_out_requests[0], peg_out_request);
     }
 
     #[test]
@@ -6546,7 +6546,7 @@ pub mod tests {
                 .expect("Failed to get peg-in ops from sortition DB");
 
         assert_eq!(res_peg_out_fulfillments.len(), 1);
-        assert_eq!(res_peg_out_fulfillments[0].amount, 1337);
+        assert_eq!(res_peg_out_fulfillments[0], peg_out_fulfill);
     }
 
     #[test]
