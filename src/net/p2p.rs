@@ -32,11 +32,17 @@ use std::sync::mpsc::SyncSender;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::TrySendError;
 
+use clarity::vm::ast::ASTRules;
+use clarity::vm::database::BurnStateDB;
 use mio;
 use mio::net as mio_net;
 use rand::prelude::*;
 use rand::thread_rng;
-
+use stacks_common::util::get_epoch_time_ms;
+use stacks_common::util::get_epoch_time_secs;
+use stacks_common::util::hash::to_hex;
+use stacks_common::util::log;
+use stacks_common::util::secp256k1::Secp256k1PublicKey;
 use url;
 
 use crate::burnchains::db::BurnchainDB;
@@ -47,6 +53,7 @@ use crate::burnchains::PublicKey;
 use crate::chainstate::burn::db::sortdb::{BlockHeaderCache, SortitionDB};
 use crate::chainstate::burn::BlockSnapshot;
 use crate::chainstate::stacks::db::StacksChainState;
+use crate::chainstate::stacks::StacksBlockHeader;
 use crate::chainstate::stacks::{MAX_BLOCK_LEN, MAX_TRANSACTION_LEN};
 use crate::monitoring::{update_inbound_neighbors, update_outbound_neighbors};
 use crate::net::asn::ASEntry4;
@@ -75,19 +82,9 @@ use crate::net::Neighbor;
 use crate::net::NeighborKey;
 use crate::net::PeerAddress;
 use crate::net::*;
+use crate::types::chainstate::{PoxId, SortitionId};
 use crate::util_lib::db::DBConn;
 use crate::util_lib::db::Error as db_error;
-use clarity::vm::database::BurnStateDB;
-use stacks_common::util::get_epoch_time_ms;
-use stacks_common::util::get_epoch_time_secs;
-use stacks_common::util::hash::to_hex;
-use stacks_common::util::log;
-use stacks_common::util::secp256k1::Secp256k1PublicKey;
-
-use crate::chainstate::stacks::StacksBlockHeader;
-use crate::types::chainstate::{PoxId, SortitionId};
-
-use clarity::vm::ast::ASTRules;
 
 /// inter-thread request to send a p2p message from another thread in this program.
 #[derive(Debug)]
@@ -5415,9 +5412,15 @@ mod test {
     use std::thread;
     use std::time;
 
+    use clarity::vm::ast::stack_depth_checker::AST_CALL_STACK_DEPTH_BUFFER;
+    use clarity::vm::types::StacksAddressExtensions;
+    use clarity::vm::MAX_CALL_STACK_DEPTH;
     use rand;
     use rand::RngCore;
+    use stacks_common::util::log;
+    use stacks_common::util::sleep_ms;
 
+    use super::*;
     use crate::burnchains::burnchain::*;
     use crate::burnchains::*;
     use crate::chainstate::stacks::test::*;
@@ -5431,14 +5434,6 @@ mod test {
     use crate::net::*;
     use crate::types::chainstate::BurnchainHeaderHash;
     use crate::util_lib::test::*;
-    use clarity::vm::types::StacksAddressExtensions;
-    use stacks_common::util::log;
-    use stacks_common::util::sleep_ms;
-
-    use clarity::vm::ast::stack_depth_checker::AST_CALL_STACK_DEPTH_BUFFER;
-    use clarity::vm::MAX_CALL_STACK_DEPTH;
-
-    use super::*;
 
     fn make_random_peer_address() -> PeerAddress {
         let mut rng = rand::thread_rng();

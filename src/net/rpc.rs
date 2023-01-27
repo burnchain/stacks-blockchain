@@ -27,23 +27,51 @@ use std::net::SocketAddr;
 use std::time::Instant;
 use std::{convert::TryFrom, fmt};
 
+use clarity::vm::database::clarity_store::make_contract_hash_key;
+use clarity::vm::types::TraitIdentifier;
+use clarity::vm::ClarityVersion;
+use clarity::vm::{
+    analysis::errors::CheckErrors,
+    ast::ASTRules,
+    costs::{ExecutionCost, LimitedCostTracker},
+    database::{
+        clarity_store::ContractCommitment, BurnStateDB, ClarityDatabase, ClaritySerializable,
+        STXBalance, StoreType,
+    },
+    errors::Error as ClarityRuntimeError,
+    errors::Error::Unchecked,
+    errors::InterpreterError,
+    types::{PrincipalData, QualifiedContractIdentifier, StandardPrincipalData},
+    ClarityName, ContractName, SymbolicExpression, Value,
+};
 use rand::prelude::*;
 use rand::thread_rng;
 use rusqlite::{DatabaseName, NO_PARAMS};
+use stacks_common::types::chainstate::BlockHeaderHash;
+use stacks_common::types::chainstate::{BurnchainHeaderHash, StacksAddress, StacksBlockId};
+use stacks_common::types::StacksPublicKeyBuffer;
+use stacks_common::util::get_epoch_time_secs;
+use stacks_common::util::hash::Hash160;
+use stacks_common::util::hash::{hex_bytes, to_hex};
 
+use super::{RPCPoxCurrentCycleInfo, RPCPoxNextCycleInfo};
 use crate::burnchains::affirmation::AffirmationMap;
 use crate::burnchains::Burnchain;
 use crate::burnchains::BurnchainView;
 use crate::burnchains::*;
 use crate::chainstate::burn::db::sortdb::SortitionDB;
 use crate::chainstate::burn::ConsensusHash;
+use crate::chainstate::stacks::boot::{POX_1_NAME, POX_2_NAME};
 use crate::chainstate::stacks::db::blocks::CheckError;
 use crate::chainstate::stacks::db::{
     blocks::MINIMUM_TX_FEE_RATE_PER_BYTE, StacksChainState, StreamCursor,
 };
 use crate::chainstate::stacks::Error as chain_error;
+use crate::chainstate::stacks::StacksBlockHeader;
 use crate::chainstate::stacks::*;
 use crate::clarity_vm::clarity::ClarityConnection;
+use crate::clarity_vm::clarity::Error as clarity_error;
+use crate::clarity_vm::database::marf::MarfedKV;
 use crate::codec::StacksMessageCodec;
 use crate::core::mempool::*;
 use crate::cost_estimates::metrics::CostMetric;
@@ -94,46 +122,13 @@ use crate::net::{
     RPCPoxInfoData,
 };
 use crate::net::{RPCNeighbor, RPCNeighborsInfo};
+use crate::util_lib::boot::boot_code_id;
 use crate::util_lib::db::DBConn;
 use crate::util_lib::db::Error as db_error;
-use clarity::vm::database::clarity_store::make_contract_hash_key;
-use clarity::vm::types::TraitIdentifier;
-use clarity::vm::ClarityVersion;
-use clarity::vm::{
-    analysis::errors::CheckErrors,
-    ast::ASTRules,
-    costs::{ExecutionCost, LimitedCostTracker},
-    database::{
-        clarity_store::ContractCommitment, BurnStateDB, ClarityDatabase, ClaritySerializable,
-        STXBalance, StoreType,
-    },
-    errors::Error as ClarityRuntimeError,
-    errors::Error::Unchecked,
-    errors::InterpreterError,
-    types::{PrincipalData, QualifiedContractIdentifier, StandardPrincipalData},
-    ClarityName, ContractName, SymbolicExpression, Value,
-};
-use stacks_common::util::get_epoch_time_secs;
-use stacks_common::util::hash::Hash160;
-use stacks_common::util::hash::{hex_bytes, to_hex};
-
-use crate::chainstate::stacks::boot::{POX_1_NAME, POX_2_NAME};
-use crate::chainstate::stacks::StacksBlockHeader;
-use crate::clarity_vm::database::marf::MarfedKV;
-use stacks_common::types::chainstate::BlockHeaderHash;
-use stacks_common::types::chainstate::{BurnchainHeaderHash, StacksAddress, StacksBlockId};
-use stacks_common::types::StacksPublicKeyBuffer;
-
-use crate::clarity_vm::clarity::Error as clarity_error;
-
 use crate::{
     chainstate::burn::operations::leader_block_commit::OUTPUTS_PER_COMMIT, types, util,
     util::hash::Sha256Sum, version_string,
 };
-
-use crate::util_lib::boot::boot_code_id;
-
-use super::{RPCPoxCurrentCycleInfo, RPCPoxNextCycleInfo};
 
 pub const STREAM_CHUNK_SIZE: u64 = 4096;
 
@@ -3596,6 +3591,13 @@ mod test {
     use std::convert::TryInto;
     use std::iter::FromIterator;
 
+    use clarity::vm::types::*;
+    use stacks_common::address::*;
+    use stacks_common::util::get_epoch_time_secs;
+    use stacks_common::util::hash::hex_bytes;
+    use stacks_common::util::pipe::*;
+
+    use super::*;
     use crate::burnchains::Burnchain;
     use crate::burnchains::BurnchainView;
     use crate::burnchains::*;
@@ -3606,24 +3608,15 @@ mod test {
     use crate::chainstate::stacks::miner::*;
     use crate::chainstate::stacks::test::*;
     use crate::chainstate::stacks::Error as chain_error;
+    use crate::chainstate::stacks::C32_ADDRESS_VERSION_TESTNET_SINGLESIG;
     use crate::chainstate::stacks::*;
+    use crate::core::mempool::{BLOOM_COUNTER_ERROR_RATE, MAX_BLOOM_COUNTER_TXS};
     use crate::net::codec::*;
     use crate::net::http::*;
     use crate::net::test::*;
     use crate::net::*;
-    use clarity::vm::types::*;
-    use stacks_common::address::*;
-    use stacks_common::util::get_epoch_time_secs;
-    use stacks_common::util::hash::hex_bytes;
-    use stacks_common::util::pipe::*;
-
-    use crate::chainstate::stacks::C32_ADDRESS_VERSION_TESTNET_SINGLESIG;
     use crate::types::chainstate::BlockHeaderHash;
     use crate::types::chainstate::BurnchainHeaderHash;
-
-    use crate::core::mempool::{BLOOM_COUNTER_ERROR_RATE, MAX_BLOOM_COUNTER_TXS};
-
-    use super::*;
 
     const TEST_CONTRACT: &'static str = "
         (define-data-var bar int 0)

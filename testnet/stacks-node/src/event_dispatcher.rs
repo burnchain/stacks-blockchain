@@ -7,14 +7,17 @@ use async_h1::client;
 use async_std::net::TcpStream;
 use http_types::{Method, Request, Url};
 use serde_json::json;
-
 use stacks::burnchains::{PoxConstants, Txid};
+use stacks::chainstate::burn::ConsensusHash;
 use stacks::chainstate::coordinator::BlockEventDispatcher;
 use stacks::chainstate::stacks::address::PoxAddress;
+use stacks::chainstate::stacks::db::unconfirmed::ProcessedUnconfirmedState;
 use stacks::chainstate::stacks::db::StacksHeaderInfo;
 use stacks::chainstate::stacks::events::{
     StacksTransactionEvent, StacksTransactionReceipt, TransactionOrigin,
 };
+use stacks::chainstate::stacks::miner::TransactionEvent;
+use stacks::chainstate::stacks::TransactionPayload;
 use stacks::chainstate::stacks::{
     db::accounts::MinerReward, db::MinerRewardInfo, StacksTransaction,
 };
@@ -30,10 +33,6 @@ use stacks::vm::events::{FTEventType, NFTEventType, STXEventType};
 use stacks::vm::types::{AssetIdentifier, QualifiedContractIdentifier, Value};
 
 use super::config::{EventKeyType, EventObserverConfig};
-use stacks::chainstate::burn::ConsensusHash;
-use stacks::chainstate::stacks::db::unconfirmed::ProcessedUnconfirmedState;
-use stacks::chainstate::stacks::miner::TransactionEvent;
-use stacks::chainstate::stacks::TransactionPayload;
 
 #[derive(Debug, Clone)]
 struct EventObserver {
@@ -999,12 +998,13 @@ impl EventDispatcher {
 
 #[cfg(test)]
 mod test {
-    use crate::event_dispatcher::EventObserver;
     use clarity::vm::costs::ExecutionCost;
     use stacks::burnchains::{PoxConstants, Txid};
     use stacks::chainstate::stacks::db::StacksHeaderInfo;
     use stacks::chainstate::stacks::StacksBlock;
     use stacks_common::types::chainstate::{BurnchainHeaderHash, StacksBlockId};
+
+    use crate::event_dispatcher::EventObserver;
 
     #[test]
     fn build_block_processed_event() {
