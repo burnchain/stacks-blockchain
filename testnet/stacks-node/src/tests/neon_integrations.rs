@@ -10427,10 +10427,13 @@ fn microblock_miner_multiple_attempts() {
 #[test]
 #[ignore]
 fn test_submit_and_observe_sbtc_ops() {
-    let recipient_stx_addr = StacksAddress::new(C32_ADDRESS_VERSION_TESTNET_SINGLESIG, Hash160([0; 20]));
+    let recipient_stx_addr =
+        StacksAddress::new(C32_ADDRESS_VERSION_TESTNET_SINGLESIG, Hash160([0; 20]));
     let receiver_contract_name = ContractName::from("awesome_contract");
-    let receiver_contract_principal: PrincipalData = QualifiedContractIdentifier::new(recipient_stx_addr.into(), receiver_contract_name).into();
-    let receiver_standard_principal: PrincipalData = StandardPrincipalData::from(recipient_stx_addr).into();
+    let receiver_contract_principal: PrincipalData =
+        QualifiedContractIdentifier::new(recipient_stx_addr.into(), receiver_contract_name).into();
+    let receiver_standard_principal: PrincipalData =
+        StandardPrincipalData::from(recipient_stx_addr).into();
     let peg_wallet_address =
         address::PoxAddress::Addr32(false, address::PoxAddressType32::P2TR, [0; 32]);
     let recipient_btc_addr = address::PoxAddress::Standard(recipient_stx_addr, None);
@@ -10620,7 +10623,10 @@ fn test_submit_and_observe_sbtc_ops() {
 
     next_block_and_wait(&mut btc_regtest_controller, &blocks_processed);
 
-    assert_eq!(parsed_peg_in_op_standard.recipient, peg_in_op_standard.recipient);
+    assert_eq!(
+        parsed_peg_in_op_standard.recipient,
+        peg_in_op_standard.recipient
+    );
     assert_eq!(parsed_peg_in_op_standard.amount, peg_in_op_standard.amount);
     assert_eq!(
         parsed_peg_in_op_standard.peg_wallet_address,
