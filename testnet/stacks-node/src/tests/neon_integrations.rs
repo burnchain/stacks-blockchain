@@ -10490,7 +10490,7 @@ fn test_submit_and_observe_sbtc_ops() {
 
     let peg_in_op_contract = PegInOp {
         recipient: receiver_contract_principal,
-        peg_wallet_address,
+        peg_wallet_address: peg_wallet_address.clone(),
         amount: 1337,
         memo: Vec::new(),
         txid: Txid([1u8; 32]),
@@ -10503,6 +10503,8 @@ fn test_submit_and_observe_sbtc_ops() {
         recipient: recipient_btc_addr.clone(),
         signature: MessageSignature([0; 65]),
         amount: 1337,
+        peg_wallet_address,
+        fulfillment_fee: 1000,
         memo: Vec::new(),
         txid: Txid([0u8; 32]),
         vtxindex: 0,
@@ -10651,6 +10653,14 @@ fn test_submit_and_observe_sbtc_ops() {
     assert_eq!(
         parsed_peg_out_request_op.signature,
         peg_out_request_op.signature
+    );
+    assert_eq!(
+        parsed_peg_out_request_op.peg_wallet_address,
+        peg_out_request_op.peg_wallet_address
+    );
+    assert_eq!(
+        parsed_peg_out_request_op.fulfillment_fee,
+        peg_out_request_op.fulfillment_fee
     );
 
     assert_eq!(
