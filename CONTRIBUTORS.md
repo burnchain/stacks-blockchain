@@ -141,6 +141,14 @@ You can automatically reformat your commit via:
 cargo fmt --all -- --config group_imports=StdExternalCrate
 ```
 
+### Import order 
+Code files should have a maximum of three import groups:
+1. A group with std/alloc/core imports 
+2. A group with external crate imports 
+3. A group for internal imports: self, super, and crate. 
+
+This grouping and ordering is enforced by the rustfmt flag, `group_imports`. 
+
 ### Code block consistency
 
 Surrounding code blocks with `{` and `}` is encouraged, even when the enclosed
