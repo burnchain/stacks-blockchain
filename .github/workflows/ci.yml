@@ -18,138 +18,138 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Run full genesis test
-  full-genesis:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Single full genesis integration test
-        env:
-          DOCKER_BUILDKIT: 1
-        # Remove .dockerignore file so codecov has access to git info
-        run: |
-          rm .dockerignore
-          docker build -o coverage-output -f ./.github/actions/bitcoin-int-tests/Dockerfile.large-genesis .
-      - uses: codecov/codecov-action@v2
-        with:
-          files: ./coverage-output/lcov.info
-          name: large_genesis
-          fail_ci_if_error: false
+#   # Run full genesis test
+#   full-genesis:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Single full genesis integration test
+#         env:
+#           DOCKER_BUILDKIT: 1
+#         # Remove .dockerignore file so codecov has access to git info
+#         run: |
+#           rm .dockerignore
+#           docker build -o coverage-output -f ./.github/actions/bitcoin-int-tests/Dockerfile.large-genesis .
+#       - uses: codecov/codecov-action@v2
+#         with:
+#           files: ./coverage-output/lcov.info
+#           name: large_genesis
+#           fail_ci_if_error: false
 
-  # Run unit tests with code coverage
-  unit-tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run units tests (with coverage)
-        env:
-          DOCKER_BUILDKIT: 1
-        # Remove .dockerignore file so codecov has access to git info
-        run: |
-          rm .dockerignore
-          docker build -o coverage-output -f ./.github/actions/bitcoin-int-tests/Dockerfile.code-cov .
-      - uses: codecov/codecov-action@v2
-        with:
-          files: ./coverage-output/lcov.info
-          name: unit_tests
-          fail_ci_if_error: false
+#   # Run unit tests with code coverage
+#   unit-tests:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Run units tests (with coverage)
+#         env:
+#           DOCKER_BUILDKIT: 1
+#         # Remove .dockerignore file so codecov has access to git info
+#         run: |
+#           rm .dockerignore
+#           docker build -o coverage-output -f ./.github/actions/bitcoin-int-tests/Dockerfile.code-cov .
+#       - uses: codecov/codecov-action@v2
+#         with:
+#           files: ./coverage-output/lcov.info
+#           name: unit_tests
+#           fail_ci_if_error: false
 
-  open-api-validation:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run units tests (with coverage)
-        env:
-          DOCKER_BUILDKIT: 1
-        run: docker build -o dist/ -f .github/actions/open-api/Dockerfile.open-api-validate .
-      - name: Upload bundled html
-        uses: actions/upload-artifact@v2
-        with:
-          name: open-api-bundle
-          path: |
-            dist
-  # Run net-tests
-  nettest:
-    # disable this job/test for now, since we haven't seen this pass
-    #  on github actions in a while, and the failures can take > 4 hours
-    if: ${{ false }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run network relay tests
-        env:
-          DOCKER_BUILDKIT: 1
-        run: docker build -f ./.github/actions/bitcoin-int-tests/Dockerfile.net-tests .
+#   open-api-validation:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Run units tests (with coverage)
+#         env:
+#           DOCKER_BUILDKIT: 1
+#         run: docker build -o dist/ -f .github/actions/open-api/Dockerfile.open-api-validate .
+#       - name: Upload bundled html
+#         uses: actions/upload-artifact@v2
+#         with:
+#           name: open-api-bundle
+#           path: |
+#             dist
+#   # Run net-tests
+#   nettest:
+#     # disable this job/test for now, since we haven't seen this pass
+#     #  on github actions in a while, and the failures can take > 4 hours
+#     if: ${{ false }}
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Run network relay tests
+#         env:
+#           DOCKER_BUILDKIT: 1
+#         run: docker build -f ./.github/actions/bitcoin-int-tests/Dockerfile.net-tests .
 
-  core-contracts-clarinet-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: "Execute core contract unit tests in Clarinet"
-        uses: docker://hirosystems/clarinet:1.1.0
-        with:
-          args: test --coverage --manifest-path=./contrib/core-contract-tests/Clarinet.toml
-      - name: "Export code coverage"
-        uses: codecov/codecov-action@v1
-        with:
-          files: ./coverage.lcov
-          verbose: true
-          fail_ci_if_error: false
+#   core-contracts-clarinet-test:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: "Execute core contract unit tests in Clarinet"
+#         uses: docker://hirosystems/clarinet:1.1.0
+#         with:
+#           args: test --coverage --manifest-path=./contrib/core-contract-tests/Clarinet.toml
+#       - name: "Export code coverage"
+#         uses: codecov/codecov-action@v1
+#         with:
+#           files: ./coverage.lcov
+#           verbose: true
+#           fail_ci_if_error: false
 
-  # rustfmt checking
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run rustfmt check
-        env:
-          DOCKER_BUILDKIT: 1
-        run: docker build -f ./.github/actions/bitcoin-int-tests/Dockerfile.rustfmt .
+#   # rustfmt checking
+#   rustfmt:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Run rustfmt check
+#         env:
+#           DOCKER_BUILDKIT: 1
+#         run: docker build -f ./.github/actions/bitcoin-int-tests/Dockerfile.rustfmt .
 
-  # Create distributions
-  dist:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform:
-          [
-            windows-x64,
-            macos-x64,
-            macos-arm64,
-            linux-x64,
-            linux-musl-x64,
-            linux-armv7,
-            linux-arm64,
-          ]
+#   # Create distributions
+#   dist:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         platform:
+#           [
+#             windows-x64,
+#             macos-x64,
+#             macos-arm64,
+#             linux-x64,
+#             linux-musl-x64,
+#             linux-armv7,
+#             linux-arm64,
+#           ]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set Vars
-        run: |
-          echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
-          echo "GITHUB_REF_SHORT=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Set Vars
+#         run: |
+#           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_ENV
+#           echo "GITHUB_REF_SHORT=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v1
 
-      - name: Build distributable
-        uses: docker/build-push-action@v2
-        with:
-          file: build-scripts/Dockerfile.${{ matrix.platform }}
-          outputs: dist/${{ matrix.platform }}
-          build-args: |
-            STACKS_NODE_VERSION=${{ github.event.inputs.tag || env.GITHUB_SHA_SHORT }}
-            GIT_BRANCH=${{ env.GITHUB_REF_SHORT }}
-            GIT_COMMIT=${{ env.GITHUB_SHA_SHORT }}
+#       - name: Build distributable
+#         uses: docker/build-push-action@v2
+#         with:
+#           file: build-scripts/Dockerfile.${{ matrix.platform }}
+#           outputs: dist/${{ matrix.platform }}
+#           build-args: |
+#             STACKS_NODE_VERSION=${{ github.event.inputs.tag || env.GITHUB_SHA_SHORT }}
+#             GIT_BRANCH=${{ env.GITHUB_REF_SHORT }}
+#             GIT_COMMIT=${{ env.GITHUB_SHA_SHORT }}
 
-      - name: Compress artifact
-        run: zip --junk-paths ${{ matrix.platform }} ./dist/${{ matrix.platform }}/*
+#       - name: Compress artifact
+#         run: zip --junk-paths ${{ matrix.platform }} ./dist/${{ matrix.platform }}/*
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.platform }}
-          path: ${{ matrix.platform }}.zip
+#       - name: Upload artifact
+#         uses: actions/upload-artifact@v2
+#         with:
+#           name: ${{ matrix.platform }}
+#           path: ${{ matrix.platform }}.zip
 
 #  call-docker-platforms-workflow:
 #    if: ${{ github.event.inputs.tag != '' }}
@@ -180,7 +180,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            blockstack/${{ github.event.repository.name }}
+            muthudotbtc/${{ github.event.repository.name }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -241,7 +241,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            blockstack/${{ github.event.repository.name }}
+            muthudotbtc/${{ github.event.repository.name }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -268,63 +268,63 @@ jobs:
           push: ${{ github.event.inputs.tag != '' || (github.ref != 'refs/heads/master' && !contains(github.ref, 'refs/pull')) }}
 
   # Create a new release if we're building a tag
-  create-release:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.tag != '' }}
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    needs:
-      - dist
-      - build-publish
-      - build-publish-stretch
+#   create-release:
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event.inputs.tag != '' }}
+#     outputs:
+#       upload_url: ${{ steps.create_release.outputs.upload_url }}
+#     needs:
+#       - dist
+#       - build-publish
+#       - build-publish-stretch
 
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          # Use custom secrets.GH_TOKEN instead of default secrets.GITHUB_TOKEN because the custom token will trigger the
-          # clarity-js-sdk-pr workflow. As events caused by default tokens do not trigger subsequent workflow runs to avoid loops.
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.ref }}
-          release_name: Release ${{ github.event.inputs.tag || github.ref }}
-          draft: false
-          prerelease: true
+#     steps:
+#       - name: Create Release
+#         id: create_release
+#         uses: actions/create-release@v1
+#         env:
+#           # Use custom secrets.GH_TOKEN instead of default secrets.GITHUB_TOKEN because the custom token will trigger the
+#           # clarity-js-sdk-pr workflow. As events caused by default tokens do not trigger subsequent workflow runs to avoid loops.
+#           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#         with:
+#           tag_name: ${{ github.event.inputs.tag || github.ref }}
+#           release_name: Release ${{ github.event.inputs.tag || github.ref }}
+#           draft: false
+#           prerelease: true
 
-  # Upload distributables to a new release if we're building a tag or a tag was passed in
-  upload-dist:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.tag != '' }}
-    needs:
-      - create-release
-    strategy:
-      matrix:
-        platform:
-          [
-            windows-x64,
-            macos-x64,
-            macos-arm64,
-            linux-x64,
-            linux-musl-x64,
-            linux-armv7,
-            linux-arm64,
-          ]
+#   # Upload distributables to a new release if we're building a tag or a tag was passed in
+#   upload-dist:
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event.inputs.tag != '' }}
+#     needs:
+#       - create-release
+#     strategy:
+#       matrix:
+#         platform:
+#           [
+#             windows-x64,
+#             macos-x64,
+#             macos-arm64,
+#             linux-x64,
+#             linux-musl-x64,
+#             linux-armv7,
+#             linux-arm64,
+#           ]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download distro
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.platform }}
-          path: dist/
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Download distro
+#         uses: actions/download-artifact@v2
+#         with:
+#           name: ${{ matrix.platform }}
+#           path: dist/
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/${{ matrix.platform }}.zip
-          asset_name: ${{ matrix.platform }}.zip
-          asset_content_type: application/zip
+#       - name: Upload Release Asset
+#         uses: actions/upload-release-asset@v1
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         with:
+#           upload_url: ${{ needs.create-release.outputs.upload_url }}
+#           asset_path: ./dist/${{ matrix.platform }}.zip
+#           asset_name: ${{ matrix.platform }}.zip
+#           asset_content_type: application/zip
